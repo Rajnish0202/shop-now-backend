@@ -3,6 +3,7 @@ const app = express();
 const dotenv = require('dotenv').config();
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const authRouter = require('./routes/userRoute');
 const productRouter = require('./routes/productRoute');
 const blogRouter = require('./routes/blogRoute');
@@ -21,13 +22,19 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
+app.use(
+  cors({
+    origin: ['http://localhost:3000'],
+    credentials: true,
+  })
+);
 
 // Router Middleware
 
 app.use('/api/user', authRouter);
 app.use('/api/product', productRouter);
 app.use('/api/blog', blogRouter);
-app.use('/api/category', productCategoryRouter);
+app.use('/api/product-category', productCategoryRouter);
 app.use('/api/brand', brandRouter);
 app.use('/api/blog-category', blogCategoryRouter);
 app.use('/api/coupon', couponRouter);

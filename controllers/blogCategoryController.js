@@ -1,9 +1,24 @@
 const asyncHandler = require('express-async-handler');
 const BlogCategory = require('../models/blogCategory');
 const validateMongoDbId = require('../utils/validateMongodbId');
+const slugify = require('slugify');
 
 const createBlogCategory = asyncHandler(async (req, res) => {
-  const category = await BlogCategory.create(req.body);
+  const { title } = req.body;
+
+  if (!title) {
+    res.status(401);
+    throw new Error('Category title is required. ');
+  }
+
+  const existingCategory = await BlogCategory.findOne({ title });
+
+  if (existingCategory) {
+    res.status(200);
+    throw new Error('Category already exists');
+  }
+
+  const category = await BlogCategory.create({ title, slug: slugify(title) });
 
   res.status(201).json({
     success: true,

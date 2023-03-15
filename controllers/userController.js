@@ -14,21 +14,57 @@ const uniqid = require('uniqid');
 
 // Create A User
 const createUser = asyncHandler(async (req, res) => {
-  const email = req.body.email;
+  const { firstname, lastname, email, mobile, password } = req.body;
 
-  const findUser = await User.findOne({ email });
+  // Validation
+  if (!firstname || !lastname || !email || !mobile || !password) {
+    res.status(400);
+    throw new Error('Please fill in all required fields');
+  }
 
-  if (!findUser) {
-    // Create a new User
-    const user = await User.create(req.body);
+  if (password.length < 6) {
+    res.status(400);
+    throw new Error('Password must be up to 6 characters.');
+  }
+
+  let findUser = await User.findOne({ email });
+  findUser = await User.findOne({ mobile });
+
+  if (findUser) {
+    // User Already Exists
+    res.status(400);
+    throw new Error('Email or Mobile has already been registered!');
+  }
+
+  // Create User
+
+  const user = await User.create({
+    firstname,
+    lastname,
+    email,
+    mobile,
+    password,
+  });
+
+  // Generate Token
+  const refreshToken = await generateRefreshToken(user?._id);
+
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 3),
+    secure: true,
+    sameSite: 'none',
+  });
+
+  if (user) {
     res.status(201).json({
       success: true,
       user,
+      refreshToken,
     });
   } else {
-    // User Already Exists
     res.status(400);
-    throw new Error('User Already Exists!');
+    throw new Error('Invalid user data');
   }
 });
 
@@ -37,13 +73,18 @@ const createUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
+  if (password.length < 6) {
+    res.status(400);
+    throw new Error('Password must be up to 6 characters.');
+  }
+
   // Check if user exists or not
   const user = await User.findOne({ email });
   const passwordMatched = await user.isPasswordMatched(password);
 
   if (user && passwordMatched) {
     const refreshToken = await generateRefreshToken(user?._id);
-    const updateuser = await User.findByIdAndUpdate(
+    await User.findByIdAndUpdate(
       user?._id,
       {
         refreshToken,
@@ -52,7 +93,9 @@ const loginUser = asyncHandler(async (req, res) => {
     );
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 * 3,
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 3),
+      secure: true,
+      sameSite: 'none',
     });
     res.json({
       success: true,
@@ -105,6 +148,20 @@ const getUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error(error);
   }
+});
+
+const loadUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req?.user?._id).select('-password');
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User Not Found!');
+  }
+
+  res.status(200).json({
+    success: true,
+    user,
+  });
 });
 
 // Handle Refresh Token
@@ -603,4 +660,5 @@ module.exports = {
   createOrder,
   getOrders,
   updateOrderStatus,
+  loadUser,
 };

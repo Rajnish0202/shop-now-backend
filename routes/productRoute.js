@@ -8,6 +8,7 @@ const {
   addToWishlist,
   rating,
   uploadImages,
+  getRelatedProduct,
 } = require('../controllers/productController');
 const { isAuth, isAdmin } = require('../middlewares/authMiddleware');
 const {
@@ -18,7 +19,8 @@ const {
 const router = express.Router();
 
 router.get('/', getAllProduct);
-router.get('/:id', getAProduct);
+router.get('/:slug', getAProduct);
+router.get('/related-product/:productid/:categoryid', getRelatedProduct);
 router.put('/wishlist', isAuth, addToWishlist);
 router.put('/rating', isAuth, rating);
 router.post('/', isAuth, isAdmin, createProduct);

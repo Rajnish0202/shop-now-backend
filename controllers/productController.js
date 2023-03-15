@@ -10,10 +10,51 @@ const fs = require('fs');
 
 const createProduct = asyncHandler(async (req, res) => {
   try {
-    if (req.body.title) {
-      req.body.slug = slugify(req.body.title);
+    const { title, description, price, category, quantity, color, brand } =
+      req.body;
+
+    // Validation
+    switch (true) {
+      case !title:
+        res.status(400);
+        throw new Error('Title is Required.');
+
+      case !description:
+        res.status(400);
+        throw new Error('Description is Required.');
+
+      case !price:
+        res.status(400);
+        throw new Error('Price is Required.');
+
+      case !category:
+        res.status(400);
+        throw new Error('Category is Required.');
+
+      case !quantity:
+        res.status(400);
+        throw new Error('Quantity is Required.');
+
+      case !color:
+        res.status(400);
+        throw new Error('Color is Required.');
+
+      case !brand:
+        res.status(400);
+        throw new Error('Brand is Required.');
     }
-    const newProduct = await Product.create(req.body);
+
+    const newProduct = await Product.create({
+      title,
+      slug: slugify(title),
+      description,
+      price,
+      category,
+      quantity,
+      color,
+      brand,
+    });
+
     res.status(201).json({
       success: true,
       newProduct,
@@ -23,17 +64,62 @@ const createProduct = asyncHandler(async (req, res) => {
   }
 });
 
+// Update Product
+
 const updateProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
   try {
-    if (req.body.title) {
-      req.body.slug = slugify(req.body.title);
+    const { title, description, price, category, quantity, color, brand } =
+      req.body;
+
+    // Validation
+    switch (true) {
+      case !title:
+        res.status(400);
+        throw new Error('Title is Required.');
+
+      case !description:
+        res.status(400);
+        throw new Error('Description is Required.');
+
+      case !price:
+        res.status(400);
+        throw new Error('Price is Required.');
+
+      case !category:
+        res.status(400);
+        throw new Error('Category is Required.');
+
+      case !quantity:
+        res.status(400);
+        throw new Error('Quantity is Required.');
+
+      case !color:
+        res.status(400);
+        throw new Error('Color is Required.');
+
+      case !brand:
+        res.status(400);
+        throw new Error('Brand is Required.');
     }
 
-    const updateProduct = await Product.findByIdAndUpdate(id, req.body, {
-      new: true,
-    });
+    const updateProduct = await Product.findByIdAndUpdate(
+      id,
+      {
+        title,
+        slug: slugify(title),
+        description,
+        price,
+        color,
+        brand,
+        quantity,
+        category,
+      },
+      {
+        new: true,
+      }
+    );
 
     res.status(201).json({
       success: true,
@@ -43,6 +129,8 @@ const updateProduct = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+
+// Delete Product
 
 const deleteProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -59,11 +147,15 @@ const deleteProduct = asyncHandler(async (req, res) => {
   }
 });
 
+// Get A single product
+
 const getAProduct = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  validateMongoDbId(id);
+  const { slug } = req.params;
   try {
-    const product = await Product.findById(id);
+    const product = await Product.findOne({ slug })
+      .populate('category')
+      .populate('brand')
+      .populate('ratings.postedby', 'firstname , lastname');
 
     if (!product) {
       res.status(404);
@@ -78,6 +170,8 @@ const getAProduct = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+
+// Get ALL product
 
 const getAllProduct = asyncHandler(async (req, res) => {
   try {
@@ -120,7 +214,7 @@ const getAllProduct = asyncHandler(async (req, res) => {
       if (skip >= productCount) throw new Error('This page does not exist');
     }
 
-    const products = await query;
+    const products = await query.populate('category').populate('brand');
     res.status(200).json({
       success: true,
       productCounts: products.length,
@@ -131,6 +225,29 @@ const getAllProduct = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+
+// Get Related Product
+const getRelatedProduct = asyncHandler(async (req, res) => {
+  try {
+    const { productid, categoryid } = req.params;
+    const products = await Product.find({
+      category: categoryid,
+      _id: { $ne: productid },
+    })
+      .limit(5)
+      .populate('category');
+    res.status(200).json({
+      success: true,
+      products,
+      counts: products.length,
+    });
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
+});
+
+// Add to Wishlist
 
 const addToWishlist = asyncHandler(async (req, res) => {
   const { _id } = req.user;
@@ -180,6 +297,8 @@ const addToWishlist = asyncHandler(async (req, res) => {
   }
 });
 
+// Rating Product
+
 const rating = asyncHandler(async (req, res) => {
   const { productId, star, comment } = req.body;
   const { _id } = req.user;
@@ -190,7 +309,7 @@ const rating = asyncHandler(async (req, res) => {
     throw new Error('Product does not exists.');
   }
 
-  let alreadyRated = product.ratings.find(
+  let alreadyRated = product?.ratings?.find(
     (userId) => userId.postedby.toString() === _id.toString()
   );
 
@@ -256,6 +375,8 @@ const rating = asyncHandler(async (req, res) => {
   }
 });
 
+// Upload Images of Product
+
 const uploadImages = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
@@ -293,4 +414,5 @@ module.exports = {
   addToWishlist,
   rating,
   uploadImages,
+  getRelatedProduct,
 };
