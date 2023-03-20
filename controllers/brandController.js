@@ -36,11 +36,16 @@ const deleteBrand = asyncHandler(async (req, res) => {
 });
 
 const getAllBrand = asyncHandler(async (req, res) => {
-  const brands = await Brand.find();
+  const brands = await Brand.find()
+    .collation({ locale: 'en', strength: 2 })
+    .sort({ title: 1 });
+
+  const counts = brands.length;
 
   res.status(200).json({
     success: true,
     brands,
+    counts,
   });
 });
 

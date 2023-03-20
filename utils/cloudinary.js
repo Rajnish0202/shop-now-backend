@@ -12,16 +12,17 @@ const cloudinaryUploadImg = async (fileToUploads) => {
       fileToUploads,
 
       (result) => {
-        resolve(
-          {
-            url: result.secure_url,
-            asset_id: result.asset_id,
-            public_id: result.public_id,
-          },
-          {
-            resource_type: 'auto',
-          }
-        );
+        resolve({
+          url: result.secure_url,
+          asset_id: result.asset_id,
+          public_id: result.public_id,
+        });
+      },
+      {
+        folder: 'Shop-now',
+        width: 300,
+        height: 300,
+        resource_type: 'auto',
       }
     );
   });

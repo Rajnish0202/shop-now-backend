@@ -10,8 +10,17 @@ const fs = require('fs');
 
 const createProduct = asyncHandler(async (req, res) => {
   try {
-    const { title, description, price, category, quantity, color, brand } =
-      req.body;
+    const {
+      title,
+      description,
+      price,
+      category,
+      quantity,
+      color,
+      brand,
+      type,
+      sizes,
+    } = req.body;
 
     // Validation
     switch (true) {
@@ -42,6 +51,18 @@ const createProduct = asyncHandler(async (req, res) => {
       case !brand:
         res.status(400);
         throw new Error('Brand is Required.');
+
+      case !type:
+        res.status(400);
+        throw new Error('Type is Required.');
+    }
+
+    let size = [];
+
+    if (typeof sizes === 'string') {
+      size.push(sizes);
+    } else {
+      size = sizes;
     }
 
     const newProduct = await Product.create({
@@ -53,6 +74,8 @@ const createProduct = asyncHandler(async (req, res) => {
       quantity,
       color,
       brand,
+      type,
+      sizes,
     });
 
     res.status(201).json({
@@ -70,8 +93,17 @@ const updateProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
   try {
-    const { title, description, price, category, quantity, color, brand } =
-      req.body;
+    const {
+      title,
+      description,
+      price,
+      category,
+      quantity,
+      color,
+      brand,
+      type,
+      sizes,
+    } = req.body;
 
     // Validation
     switch (true) {
@@ -102,6 +134,18 @@ const updateProduct = asyncHandler(async (req, res) => {
       case !brand:
         res.status(400);
         throw new Error('Brand is Required.');
+
+      case !type:
+        res.status(400);
+        throw new Error('Type is Required.');
+    }
+
+    let size = [];
+
+    if (typeof sizes === 'string') {
+      size.push(sizes);
+    } else {
+      size = sizes;
     }
 
     const updateProduct = await Product.findByIdAndUpdate(
@@ -115,6 +159,8 @@ const updateProduct = asyncHandler(async (req, res) => {
         brand,
         quantity,
         category,
+        type,
+        sizes,
       },
       {
         new: true,
@@ -155,7 +201,9 @@ const getAProduct = asyncHandler(async (req, res) => {
     const product = await Product.findOne({ slug })
       .populate('category')
       .populate('brand')
-      .populate('ratings.postedby', 'firstname , lastname');
+      .populate('ratings.postedby', 'firstname , lastname')
+      .populate('type')
+      .populate('sizes', 'title');
 
     if (!product) {
       res.status(404);
@@ -177,13 +225,40 @@ const getAllProduct = asyncHandler(async (req, res) => {
   try {
     // Filtering
     const queryObj = { ...req.query };
+
     const excludeFields = ['page', 'sort', 'limit', 'fields'];
     excludeFields.forEach((el) => delete queryObj[el]);
 
     let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+    queryStr = queryStr.replace(
+      /\b(gte|gt|lte|lt|eq)\b/g,
+      (match) => `$${match}`
+    );
 
     let query = Product.find(JSON.parse(queryStr));
+
+    if (queryObj.keyword) {
+      const keyword = queryObj.keyword
+        ? {
+            $or: [
+              {
+                title: {
+                  $regex: queryObj.keyword,
+                  $options: 'i',
+                },
+              },
+              {
+                description: {
+                  $regex: queryObj.keyword,
+                  $options: 'i',
+                },
+              },
+            ],
+          }
+        : {};
+
+      query = query.find({ ...keyword });
+    }
 
     // Sorting
     if (req.query.sort) {
@@ -214,11 +289,35 @@ const getAllProduct = asyncHandler(async (req, res) => {
       if (skip >= productCount) throw new Error('This page does not exist');
     }
 
-    const products = await query.populate('category').populate('brand');
+    const totalProducts = await Product.countDocuments();
+
+    const products = await query
+      .populate('category')
+      .populate('brand')
+      .populate('type');
+
     res.status(200).json({
       success: true,
       productCounts: products.length,
+      totalProducts,
       products,
+    });
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
+});
+
+// Get Random Product
+const randomProduct = asyncHandler(async (req, res) => {
+  try {
+    const count = await Product.countDocuments();
+    const random = Math.floor(Math.random() * count);
+    const randomProducts = await Product.find().skip(random).limit(2);
+    res.status(200).json({
+      success: true,
+      randomCount: randomProducts.length,
+      randomProducts,
     });
   } catch (error) {
     res.status(400);
@@ -409,6 +508,7 @@ module.exports = {
   createProduct,
   getAllProduct,
   getAProduct,
+  randomProduct,
   updateProduct,
   deleteProduct,
   addToWishlist,

@@ -59,7 +59,9 @@ const deleteCategory = asyncHandler(async (req, res) => {
 });
 
 const getAllCategory = asyncHandler(async (req, res) => {
-  const categories = await ProductCategory.find();
+  const categories = await ProductCategory.find()
+    .collation({ locale: 'en', strength: 2 })
+    .sort({ title: 1 });
 
   res.status(200).json({
     success: true,

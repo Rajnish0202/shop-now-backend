@@ -27,9 +27,15 @@ const productSchema = new mongoose.Schema(
       ref: 'ProductCategory',
       required: true,
     },
+    sizes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Size' }],
     brand: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Brand',
+      required: true,
+    },
+    type: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Type',
       required: true,
     },
     quantity: {
@@ -61,7 +67,7 @@ const productSchema = new mongoose.Schema(
       },
     ],
     totalRating: {
-      type: String,
+      type: Number,
       default: 0,
     },
   },
