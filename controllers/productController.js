@@ -203,7 +203,8 @@ const getAProduct = asyncHandler(async (req, res) => {
       .populate('brand')
       .populate('ratings.postedby', 'firstname , lastname')
       .populate('type')
-      .populate('sizes', 'title');
+      .populate('sizes', 'title')
+      .populate('color', 'title , hex');
 
     if (!product) {
       res.status(404);
