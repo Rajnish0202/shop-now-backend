@@ -86,7 +86,7 @@ const getAllColor = asyncHandler(async (req, res) => {
 
 const getAColor = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const color = await Color.findOne({ id });
+  const color = await Color.findById(id);
 
   if (!color) {
     res.status(404);

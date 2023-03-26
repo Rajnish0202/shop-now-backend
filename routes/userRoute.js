@@ -8,7 +8,7 @@ const {
   updateUser,
   blockUser,
   unblockUser,
-  handleRefreshToken,
+  // handleRefreshToken,
   logoutUser,
   updatePassword,
   forgotPassword,
@@ -31,13 +31,12 @@ const router = express.Router();
 router.post('/register', createUser);
 router.post('/login', loginUser);
 router.get('/all-users', getAllUser);
-router.get('/refresh', handleRefreshToken);
+// router.get('/refresh', handleRefreshToken);
 router.get('/logout', logoutUser);
 router.post('/forgot-password', forgotPassword);
 router.put('/reset-password/:resetToken', resetPassword);
 
-router.delete('/empty-cart', isAuth, emptyCart);
-router.delete('/:id', isAuth, deleteUser);
+router.put('/empty-cart', isAuth, emptyCart);
 router.put('/edit-user', isAuth, updateUser);
 router.put('/password', isAuth, updatePassword);
 router.get('/wishlist', isAuth, getWishlist);
@@ -50,6 +49,8 @@ router.get('/get-orders', isAuth, getOrders);
 router.get('/loaduser', isAuth, loadUser);
 
 router.get('/:id', isAuth, isAdmin, getUser);
+router.delete('/:id', isAuth, isAdmin, deleteUser);
+
 router.put('/block-user/:id', isAuth, isAdmin, blockUser);
 router.put('/unblock-user/:id', isAuth, isAdmin, unblockUser);
 router.put('/update-order/:id', isAuth, isAdmin, updateOrderStatus);

@@ -37,7 +37,26 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     address: {
-      type: String,
+      street: {
+        type: String,
+        required: true,
+      },
+      city: {
+        type: String,
+        required: true,
+      },
+      state: {
+        type: String,
+        required: true,
+      },
+      country: {
+        type: String,
+        required: true,
+      },
+      pinCode: {
+        type: String,
+        required: true,
+      },
     },
     wishlist: [
       {
@@ -45,6 +64,7 @@ const userSchema = new mongoose.Schema(
         ref: 'Product',
       },
     ],
+
     refreshToken: {
       type: String,
     },

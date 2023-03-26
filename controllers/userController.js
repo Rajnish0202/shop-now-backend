@@ -27,6 +27,11 @@ const createUser = asyncHandler(async (req, res) => {
     throw new Error('Password must be up to 6 characters.');
   }
 
+  if (mobile.length < 10) {
+    res.status(400);
+    throw new Error('Mobile Number must be 10 digit.');
+  }
+
   let findUser = await User.findOne({ email });
   findUser = await User.findOne({ mobile });
 
@@ -52,8 +57,8 @@ const createUser = asyncHandler(async (req, res) => {
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 3),
-    secure: true,
-    sameSite: 'none',
+    // secure: true,
+    // sameSite: 'none',
   });
 
   if (user) {
@@ -94,8 +99,8 @@ const loginUser = asyncHandler(async (req, res) => {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 3),
-      secure: true,
-      sameSite: 'none',
+      // secure: true,
+      // sameSite: 'none',
     });
     res.json({
       success: true,
@@ -104,6 +109,8 @@ const loginUser = asyncHandler(async (req, res) => {
       lastname: user?.lastname,
       email: user?.email,
       mobile: user?.mobile,
+      role: user?.role,
+      address: user?.address,
       token: generateToken(user?._id),
     });
   } else {
@@ -164,29 +171,29 @@ const loadUser = asyncHandler(async (req, res) => {
   });
 });
 
-// Handle Refresh Token
+// // Handle Refresh Token
 
-const handleRefreshToken = asyncHandler(async (req, res) => {
-  const cookie = req.cookies;
-  if (!cookie?.refreshToken) throw new Error('No Refresh Token in Cookies');
+// const handleRefreshToken = asyncHandler(async (req, res) => {
+//   const cookie = req.cookies;
+//   if (!cookie?.refreshToken) throw new Error('No Refresh Token in Cookies');
 
-  const refreshToken = cookie.refreshToken;
-  const user = await User.findOne({ refreshToken });
-  if (!user) {
-    res.status(400);
-    throw new Error('No Refresh token present in database or matched.');
-  }
+//   const refreshToken = cookie.refreshToken;
+//   const user = await User.findOne({ refreshToken });
+//   if (!user) {
+//     res.status(400);
+//     throw new Error('No Refresh token present in database or matched.');
+//   }
 
-  jwt.verify(refreshToken, process.env.JWT_SECRET, (err, decoded) => {
-    if (err || user.id !== decoded.id) {
-      res.status(400);
-      throw new Error('There is something wrong with refresh token');
-    }
+//   jwt.verify(refreshToken, process.env.JWT_SECRET, (err, decoded) => {
+//     if (err || user.id !== decoded.id) {
+//       res.status(400);
+//       throw new Error('There is something wrong with refresh token');
+//     }
 
-    const accessToken = generateToken(user?._id);
-    res.status(200).json({ accessToken });
-  });
-});
+//     const accessToken = generateToken(user?._id);
+//     res.status(200).json({ accessToken });
+//   });
+// });
 
 // Logout User
 
@@ -220,6 +227,18 @@ const logoutUser = asyncHandler(async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   const { firstname, lastname, mobile, email } = req.body;
+
+  // Validation
+  if (!firstname || !lastname || !email || !mobile) {
+    res.status(400);
+    throw new Error('Please fill in all required fields');
+  }
+
+  if (mobile.length < 10) {
+    res.status(400);
+    throw new Error('Mobile Number must be 10 digit.');
+  }
+
   validateMongoDbId(_id);
   const updateUser = await User.findByIdAndUpdate(
     _id,
@@ -309,7 +328,7 @@ const unblockUser = asyncHandler(async (req, res) => {
 
 const updatePassword = asyncHandler(async (req, res) => {
   const { _id } = req.user;
-  const { password } = req.body;
+  const { oldPassword, newPassword, confirmPassword } = req.body;
   validateMongoDbId(_id);
 
   const user = await User.findById(_id);
@@ -318,8 +337,25 @@ const updatePassword = asyncHandler(async (req, res) => {
     throw new Error('User Not Found.');
   }
 
-  if (password) {
-    user.password = password;
+  if (!oldPassword && !newPassword && !confirmPassword) {
+    res.status(400);
+    throw new Error('All Fields are required.');
+  }
+
+  const isPasswordMatched = await user.isPasswordMatched(oldPassword);
+
+  if (!isPasswordMatched) {
+    res.status(400);
+    throw new Error('Old Password is Incorrect!');
+  }
+
+  if (newPassword !== confirmPassword) {
+    res.status(400);
+    throw new Error('Password does not macthed!');
+  }
+
+  if (isPasswordMatched) {
+    user.password = newPassword;
     const updatedPassword = await user.save();
     res.status(201).json({
       success: true,
@@ -428,19 +464,34 @@ const getWishlist = asyncHandler(async (req, res) => {
 const saveAddress = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   validateMongoDbId(_id);
+  const { street, city, state, country, pin } = req.body;
+
+  if (!street && !city && !state && !country && !pin) {
+    res.status(400);
+    throw new Error('Please provide all Fields.');
+  }
 
   const address = await User.findByIdAndUpdate(
     _id,
     {
-      address: req.body.address,
+      address: {
+        street,
+        city,
+        state,
+        country,
+        pinCode: pin,
+      },
     },
     { new: true }
   );
-  res.status(200).json(address);
+  res.status(200).json({
+    success: true,
+    address,
+  });
 });
 
 const userCart = asyncHandler(async (req, res) => {
-  const { cart } = req.body;
+  const { productId, count, color, size } = req.body;
   const { _id } = req.user;
   validateMongoDbId(_id);
   const user = await User.findById(_id);
@@ -450,52 +501,81 @@ const userCart = asyncHandler(async (req, res) => {
     throw new Error('User does not exists!');
   }
 
-  let products = [];
   // Check if user already have product in cart
-  const alreadyExist = await Cart.findOne({ orderby: user._id });
+  let cart = await Cart.findOne({ orderby: user._id });
+  let getPrice = await Product.findById(productId).select('price').exec();
 
-  if (alreadyExist) {
-    alreadyExist.remove();
+  if (cart) {
+    // cart exists for user
+    let itemIndex = cart.products.findIndex(
+      (p) => p.product.toString() === productId.toString()
+    );
+
+    if (itemIndex > -1) {
+      // product exists in the cart, update the count color and size
+
+      let productItem = cart.products[itemIndex];
+
+      productItem.count = count;
+      productItem.color = color;
+      productItem.size = size;
+      productItem.price = getPrice.price;
+
+      cart.products[itemIndex] = productItem;
+    } else {
+      // product does not exists in the cart, add new items
+      cart.products.push({
+        product: productId,
+        count,
+        color,
+        size,
+        price: getPrice.price,
+      });
+    }
+
+    const cartTotal = cart.products.reduce((a, b) => a + b.price * b.count, 0);
+    cart.cartTotal = cartTotal;
+
+    cart = await cart.save();
+
+    res.status(201).json({
+      success: true,
+      cart,
+    });
+  } else {
+    // no cart for user,create new cart
+
+    let newCart = await Cart.create({
+      products: [
+        { product: productId, count, color, size, price: getPrice.price },
+      ],
+      orderby: user?.id,
+    });
+
+    const cartTotal = newCart.products.reduce(
+      (a, b) => a + b.price * b.count,
+      0
+    );
+
+    newCart.cartTotal = cartTotal;
+    newCart = await newCart.save();
+
+    res.status(201).json({
+      success: true,
+      newCart,
+    });
   }
-
-  for (let i = 0; i < cart.length; i++) {
-    let object = {};
-    object.product = cart[i]._id;
-    object.count = cart[i].count;
-    object.color = cart[i].color;
-
-    let getPrice = await Product.findById(cart[i]._id).select('price').exec();
-
-    // if (!getPrice.count < cart[i].count) {
-    //   throw new Error('Your added product quantity is more then stock');
-    // }
-
-    object.price = getPrice.price;
-    products.push(object);
-  }
-  let cartTotal = 0;
-  for (let i = 0; i < products.length; i++) {
-    cartTotal = cartTotal + products[i].price * products[i].count;
-  }
-  let newCart = await new Cart({
-    products,
-    cartTotal,
-    orderby: user?.id,
-  }).save();
-
-  res.status(200).json({
-    success: true,
-    newCart,
-  });
 });
 
 const getUserCart = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   validateMongoDbId(_id);
 
-  const cart = await Cart.findOne({ orderby: _id }).populate(
-    'products.product'
-  );
+  const cart = await Cart.findOne({ orderby: _id })
+    .populate('products.product', 'slug title  price brand type images')
+    .populate('products.color')
+    .populate('products.size');
+
   res.status(200).json({
     success: true,
     cart,
@@ -503,12 +583,18 @@ const getUserCart = asyncHandler(async (req, res) => {
 });
 
 const emptyCart = asyncHandler(async (req, res) => {
+  const { productId } = req.body;
   const { _id } = req.user;
   validateMongoDbId(_id);
-  await Cart.findOneAndRemove({ orderby: _id });
+  let cart = await Cart.updateOne(
+    { orderby: _id },
+    { $pull: { products: { product: productId } } }
+  );
+
   res.status(200).json({
     success: true,
-    message: 'Your Cart items removed.',
+    cart,
+    message: 'Your Cart item removed.',
   });
 });
 
@@ -646,7 +732,7 @@ module.exports = {
   updateUser,
   blockUser,
   unblockUser,
-  handleRefreshToken,
+  // handleRefreshToken,
   logoutUser,
   updatePassword,
   forgotPassword,
