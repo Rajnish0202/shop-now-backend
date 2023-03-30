@@ -17,12 +17,13 @@ const {
   saveAddress,
   userCart,
   getUserCart,
-  emptyCart,
+  removeFromCart,
   applyCoupon,
   createOrder,
   getOrders,
   updateOrderStatus,
   loadUser,
+  emptyCart,
 } = require('../controllers/userController');
 const { isAuth, isAdmin } = require('../middlewares/authMiddleware');
 
@@ -36,7 +37,8 @@ router.get('/logout', logoutUser);
 router.post('/forgot-password', forgotPassword);
 router.put('/reset-password/:resetToken', resetPassword);
 
-router.put('/empty-cart', isAuth, emptyCart);
+router.put('/empty-cart', isAuth, removeFromCart);
+router.put('/all-empty-cart', isAuth, emptyCart);
 router.put('/edit-user', isAuth, updateUser);
 router.put('/password', isAuth, updatePassword);
 router.get('/wishlist', isAuth, getWishlist);

@@ -33,7 +33,8 @@ const deleteCoupon = asyncHandler(async (req, res) => {
 });
 
 const getAllCoupon = asyncHandler(async (req, res) => {
-  const coupons = await Coupon.find();
+  let coupons = await Coupon.find();
+  coupons = coupons.filter((coupon) => coupon.expiry >= Date.now());
   res.status(200).json({
     success: true,
     coupons,

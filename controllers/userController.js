@@ -533,8 +533,11 @@ const userCart = asyncHandler(async (req, res) => {
       });
     }
 
-    const cartTotal = cart.products.reduce((a, b) => a + b.price * b.count, 0);
-    cart.cartTotal = cartTotal;
+    // let cartTotal = 0;
+    // for (let i = 0; i < cart.products.length; i++) {
+    //   cartTotal = cartTotal + cart.products[i].price * cart.products[i].count;
+    // }
+    // cart.cartTotal = cartTotal;
 
     cart = await cart.save();
 
@@ -552,12 +555,13 @@ const userCart = asyncHandler(async (req, res) => {
       orderby: user?.id,
     });
 
-    const cartTotal = newCart.products.reduce(
-      (a, b) => a + b.price * b.count,
-      0
-    );
+    // let cartTotal = 0;
+    // for (let i = 0; i < newCart.products.length; i++) {
+    //   cartTotal =
+    //     cartTotal + newCart.products[i].price * newCart.products[i].count;
+    // }
+    // newCart.cartTotal = cartTotal;
 
-    newCart.cartTotal = cartTotal;
     newCart = await newCart.save();
 
     res.status(201).json({
@@ -572,7 +576,7 @@ const getUserCart = asyncHandler(async (req, res) => {
   validateMongoDbId(_id);
 
   const cart = await Cart.findOne({ orderby: _id })
-    .populate('products.product', 'slug title  price brand type images')
+    .populate('products.product', 'slug title brand type images')
     .populate('products.color')
     .populate('products.size');
 
@@ -582,10 +586,11 @@ const getUserCart = asyncHandler(async (req, res) => {
   });
 });
 
-const emptyCart = asyncHandler(async (req, res) => {
+const removeFromCart = asyncHandler(async (req, res) => {
   const { productId } = req.body;
   const { _id } = req.user;
   validateMongoDbId(_id);
+
   let cart = await Cart.updateOne(
     { orderby: _id },
     { $pull: { products: { product: productId } } }
@@ -598,16 +603,23 @@ const emptyCart = asyncHandler(async (req, res) => {
   });
 });
 
-const applyCoupon = asyncHandler(async (req, res) => {
-  const { coupon } = req.body;
+const emptyCart = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   validateMongoDbId(_id);
-  const vaildCoupon = await Coupon.findOne({ name: coupon });
-
-  if ((vaildCoupon && vaildCoupon.expiry < Date.now()) || !vaildCoupon) {
-    res.status(400);
-    throw new Error('Invalid or Coupon Expired!');
+  try {
+    await Cart.findOneAndRemove({ orderby: _id });
+    res.status(200).json({
+      success: true,
+      message: 'Your Cart is removed.',
+    });
+  } catch (error) {
+    throw new Error(error);
   }
+});
+
+const applyCoupon = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  validateMongoDbId(_id);
 
   let cart = await Cart.findOne({
     orderby: _id,
@@ -618,54 +630,116 @@ const applyCoupon = asyncHandler(async (req, res) => {
     throw new Error('Your cart is empty. Please add to cart');
   }
 
-  let totalAfterDiscount = (
-    cart?.cartTotal -
-    cart?.cartTotal * (vaildCoupon.discount / 100)
-  ).toFixed(2);
+  const { coupon } = req.body;
 
-  await Cart.findOneAndUpdate(
-    { orderby: _id },
-    {
-      totalAfterDiscount: totalAfterDiscount,
-    },
-    { new: true }
-  );
+  if (coupon !== null) {
+    const vaildCoupon = await Coupon.findOne({ name: coupon });
+    console.log(vaildCoupon);
 
-  res
-    .status(200)
-    .json({ success: true, message: 'Coupon Applied Successfully.' });
+    if ((vaildCoupon && vaildCoupon.expiry < Date.now()) || !vaildCoupon) {
+      res.status(400);
+      throw new Error('Invalid or Coupon Expired!');
+    }
+
+    let totalAfterDiscount = (
+      cart?.cartTotal -
+      cart?.cartTotal * (vaildCoupon.discount / 100)
+    ).toFixed(2);
+
+    await Cart.findOneAndUpdate(
+      { orderby: _id },
+      {
+        totalAfterDiscount: totalAfterDiscount,
+      },
+      { new: true }
+    );
+
+    res
+      .status(200)
+      .json({ success: true, message: 'Coupon Applied Successfully.' });
+  } else {
+    await Cart.findOneAndUpdate(
+      { orderby: _id },
+      {
+        totalAfterDiscount: null,
+      },
+      { new: true }
+    );
+
+    res
+      .status(200)
+      .json({ success: true, message: 'Coupon Removed Successfully.' });
+  }
 });
 
 const createOrder = asyncHandler(async (req, res) => {
-  const { method, couponApplied } = req.body;
+  const {
+    method,
+    couponApplied,
+    shippingAddress,
+    taxPrice,
+    shippingPrice,
+    cartTotal,
+    totalAfterDiscount,
+    paymentInfo,
+  } = req.body;
+
   const { _id } = req.user;
   validateMongoDbId(_id);
 
-  if (method !== 'COD') {
-    throw new Error('Only COD is applied.');
-  }
+  let paymentIntent = {};
 
   const userCart = await Cart.findOne({ orderby: _id });
   let finalAmount = 0;
-  if (couponApplied && userCart.totalAfterDiscount) {
-    finalAmount = userCart?.totalAfterDiscount;
+  if (couponApplied) {
+    finalAmount = totalAfterDiscount + taxPrice + shippingPrice;
   } else {
-    finalAmount = userCart?.cartTotal;
+    finalAmount = cartTotal + taxPrice + shippingPrice;
   }
 
-  let newOrder = await Order.create({
-    products: userCart.products,
-    paymentIntent: {
-      paymentId: uniqid('COD-'),
+  if (method === 'CashOnDelivery') {
+    paymentIntent = {
+      papaymentId: uniqid('COD-'),
       method,
-      amount: finalAmount,
+      amount: finalAmount?.toFixed(2),
+      taxPrice,
+      shippingPrice,
       status: 'Cash on Delivery',
       created: Date.now(),
       paid: 'Not Paid',
       currency: 'inr',
+    };
+  }
+
+  if (method === 'Stripe') {
+    paymentIntent = {
+      paymentId: paymentInfo.id,
+      method,
+      amount: finalAmount?.toFixed(2),
+      taxPrice,
+      shippingPrice,
+      status: paymentInfo.status,
+      created: Date.now(),
+      paid: 'Paid',
+      currency: 'inr',
+    };
+  }
+
+  let newOrder = await Order.create({
+    shippingInfo: {
+      street: shippingAddress.street,
+      city: shippingAddress.city,
+      state: shippingAddress.state,
+      country: shippingAddress.country,
+      pinCode: shippingAddress.pinCode,
+      phoneNo: shippingAddress.phoneNo,
     },
+    products: userCart.products,
+    paymentIntent,
     orderby: _id,
-    orderStatus: 'Cash on Delivery',
+    orderStatus: 'Not Processed',
+    cartTotal,
+    totalAfterDiscount,
   });
 
   let update = userCart.products.map((item) => {
@@ -741,6 +815,7 @@ module.exports = {
   saveAddress,
   userCart,
   getUserCart,
+  removeFromCart,
   emptyCart,
   applyCoupon,
   createOrder,
