@@ -444,11 +444,57 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
+const addWishlists = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { productId } = req.body;
+  validateMongoDbId(_id);
+
+  let addWishlist = await User.findById(_id);
+  if (!addWishlist) {
+    res.status(400);
+    throw new Error('User does not exixts');
+  }
+
+  addWishlist.wishlist.push({ wishId: productId });
+
+  addWishlist = await addWishlist.save();
+
+  res.status(200).json({
+    success: true,
+    addWishlist,
+  });
+});
+
+const removeWishlists = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { productId } = req.body;
+  validateMongoDbId(_id);
+
+  let removeWishlist = await User.findById(_id);
+  if (!removeWishlist) {
+    res.status(400);
+    throw new Error('User does not exixts');
+  }
+
+  removeWishlist.wishlist.pull({ wishId: productId });
+
+  removeWishlist = await removeWishlist.save();
+
+  res.status(200).json({
+    success: true,
+    removeWishlist,
+  });
+});
+
 const getWishlist = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   validateMongoDbId(_id);
 
-  const findWishlist = await User.findById(_id).populate('wishlist');
+  const findWishlist = await User.findById(_id)
+    .select('-address')
+    .select('-password')
+    .select('-refreshToken')
+    .populate('wishlist.wishId', 'title price slug images');
   if (!findWishlist) {
     res.status(400);
     throw new Error('User does not exixts');
@@ -533,12 +579,6 @@ const userCart = asyncHandler(async (req, res) => {
       });
     }
 
-    // let cartTotal = 0;
-    // for (let i = 0; i < cart.products.length; i++) {
-    //   cartTotal = cartTotal + cart.products[i].price * cart.products[i].count;
-    // }
-    // cart.cartTotal = cartTotal;
-
     cart = await cart.save();
 
     res.status(201).json({
@@ -554,13 +594,6 @@ const userCart = asyncHandler(async (req, res) => {
       ],
       orderby: user?.id,
     });
-
-    // let cartTotal = 0;
-    // for (let i = 0; i < newCart.products.length; i++) {
-    //   cartTotal =
-    //     cartTotal + newCart.products[i].price * newCart.products[i].count;
-    // }
-    // newCart.cartTotal = cartTotal;
 
     newCart = await newCart.save();
 
@@ -699,7 +732,7 @@ const createOrder = asyncHandler(async (req, res) => {
 
   if (method === 'CashOnDelivery') {
     paymentIntent = {
-      papaymentId: uniqid('COD-'),
+      paymentId: uniqid('COD-'),
       method,
       amount: finalAmount?.toFixed(2),
       taxPrice,
@@ -765,11 +798,29 @@ const getOrders = asyncHandler(async (req, res) => {
 
   const myOrders = await Order.find({ orderby: _id })
     .populate('products.product')
+    .sort('-createdAt')
     .exec();
-
   res.status(200).json({
     success: true,
     myOrders,
+  });
+});
+
+const getOrderDetails = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { _id } = req.user;
+  validateMongoDbId(id);
+
+  const user = await User.findById(_id);
+  if (!user) {
+    res.status(404);
+    throw new Error('User is not Authenticated. Please Logged In.');
+  }
+
+  const myOrder = await Order.findById(id).populate('products.product');
+  res.status(200).json({
+    success: true,
+    myOrder,
   });
 });
 
@@ -811,6 +862,8 @@ module.exports = {
   updatePassword,
   forgotPassword,
   resetPassword,
+  addWishlists,
+  removeWishlists,
   getWishlist,
   saveAddress,
   userCart,
@@ -820,6 +873,7 @@ module.exports = {
   applyCoupon,
   createOrder,
   getOrders,
+  getOrderDetails,
   updateOrderStatus,
   loadUser,
 };
