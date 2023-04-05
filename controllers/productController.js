@@ -505,6 +505,39 @@ const uploadImages = asyncHandler(async (req, res) => {
   }
 });
 
+// Get Products with Max Sold
+
+const popularProducts = asyncHandler(async (req, res) => {
+  const { limit } = req.query;
+  const popular = await Product.find()
+    .sort({ sold: -1 })
+    .select('title brand totalRating price images sold slug')
+    .populate('brand', 'title')
+    .limit(limit || 4);
+
+  let totalPopular = await Product.find();
+  totalPopular = totalPopular.filter((item) => item.sold > 1);
+
+  res.status(200).json({
+    totalPopular: totalPopular.length,
+    popularCount: popular.length,
+    popular,
+  });
+});
+
+// Get Products with Max Sold
+
+const featuredProducts = asyncHandler(async (req, res) => {
+  const { limit } = req.query;
+  const featured = await Product.find()
+    .sort({ createdAt: -1 })
+    .select('title brand totalRating price images sold slug createdAt')
+    .populate('brand', 'title')
+    .limit(limit || 4);
+
+  res.status(200).json(featured);
+});
+
 module.exports = {
   createProduct,
   getAllProduct,
@@ -516,4 +549,6 @@ module.exports = {
   rating,
   uploadImages,
   getRelatedProduct,
+  popularProducts,
+  featuredProducts,
 };

@@ -10,6 +10,8 @@ const {
   uploadImages,
   getRelatedProduct,
   randomProduct,
+  popularProducts,
+  featuredProducts,
 } = require('../controllers/productController');
 const { isAuth, isAdmin } = require('../middlewares/authMiddleware');
 const {
@@ -20,6 +22,8 @@ const {
 const router = express.Router();
 
 router.get('/', getAllProduct);
+router.get('/popular-product', popularProducts);
+router.get('/featured-product', featuredProducts);
 router.get('/random-product', randomProduct);
 router.get('/:slug', getAProduct);
 router.get('/related-product/:productid/:categoryid', getRelatedProduct);
