@@ -8,9 +8,7 @@ const brandSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    logo: {
-      type: String,
-    },
+    logo: {},
   },
   {
     timestamps: true,

@@ -6,7 +6,11 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const cloudinaryUploadImg = async (fileToUploads) => {
+const cloudinaryUploadImg = async (
+  fileToUploads,
+  width = 300,
+  height = 300
+) => {
   return new Promise((resolve) => {
     cloudinary.uploader.upload(
       fileToUploads,
@@ -20,8 +24,8 @@ const cloudinaryUploadImg = async (fileToUploads) => {
       },
       {
         folder: 'Shop-now',
-        width: 300,
-        height: 300,
+        width: width,
+        height: height,
         resource_type: 'auto',
       }
     );

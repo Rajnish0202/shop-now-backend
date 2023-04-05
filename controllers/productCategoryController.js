@@ -4,7 +4,6 @@ const validateMongoDbId = require('../utils/validateMongodbId');
 const slugify = require('slugify');
 const cloudinaryUploadImg = require('../utils/cloudinary');
 const fs = require('fs');
-const { log } = require('console');
 
 const createCategory = asyncHandler(async (req, res) => {
   const { title } = req.body;

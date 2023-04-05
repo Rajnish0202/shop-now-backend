@@ -2,6 +2,8 @@ const asyncHandler = require('express-async-handler');
 const validateMongoDbId = require('../utils/validateMongodbId');
 const slugify = require('slugify');
 const Type = require('../models/productType');
+const cloudinaryUploadImg = require('../utils/cloudinary');
+const fs = require('fs');
 
 const createType = asyncHandler(async (req, res) => {
   const { title } = req.body;
@@ -68,7 +70,7 @@ const getAllType = asyncHandler(async (req, res) => {
   });
 });
 
-//
+// A single Type
 
 const getAType = asyncHandler(async (req, res) => {
   const { slug } = req.params;
@@ -85,10 +87,71 @@ const getAType = asyncHandler(async (req, res) => {
   });
 });
 
+// Upload Image
+
+const updateTypeImage = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  validateMongoDbId(id);
+
+  try {
+    const uploader = (path) => cloudinaryUploadImg(path, 480, 805, 'image');
+
+    const file = req.file;
+    const { path } = file;
+
+    const newPath = await uploader(path);
+
+    fs.unlinkSync(path);
+
+    const findType = await Type.findByIdAndUpdate(
+      id,
+      {
+        image: newPath,
+      },
+      { new: true }
+    );
+    res.status(200).json(findType);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+
+// Get Product Count with Each Type
+const typesOfProducts = asyncHandler(async (req, res) => {
+  const { limit } = req.query;
+  console.log(typeof +limit);
+  let productType = await Type.aggregate([
+    {
+      $lookup: {
+        from: 'products',
+        localField: '_id',
+        foreignField: 'type',
+        as: 'products',
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        title: 1,
+        image: 1,
+        slug: 1,
+        number_of_product: { $size: '$products' },
+      },
+    },
+    {
+      $limit: +limit || 4,
+    },
+  ]);
+
+  res.status(200).json(productType);
+});
+
 module.exports = {
   createType,
   updateType,
   deleteType,
   getAllType,
   getAType,
+  updateTypeImage,
+  typesOfProducts,
 };

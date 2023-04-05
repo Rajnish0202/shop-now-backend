@@ -1,6 +1,8 @@
 const asyncHandler = require('express-async-handler');
 const Brand = require('../models/brandModel');
 const validateMongoDbId = require('../utils/validateMongodbId');
+const fs = require('fs');
+const cloudinaryUploadImg = require('../utils/cloudinary');
 
 const createBrand = asyncHandler(async (req, res) => {
   const brand = await Brand.create(req.body);
@@ -60,10 +62,37 @@ const getABrand = asyncHandler(async (req, res) => {
   });
 });
 
+const uploadBrandImage = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  validateMongoDbId(id);
+  try {
+    const uploader = (path) => cloudinaryUploadImg(path, 150, 150, 'image');
+
+    const file = req.file;
+    const { path } = file;
+
+    const newPath = await uploader(path);
+
+    fs.unlinkSync(path);
+
+    const findBrand = await Brand.findByIdAndUpdate(
+      id,
+      {
+        logo: newPath,
+      },
+      { new: true }
+    );
+    res.status(200).json(findBrand);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+
 module.exports = {
   createBrand,
   updateBrand,
   deleteBrand,
   getAllBrand,
   getABrand,
+  uploadBrandImage,
 };
