@@ -28,14 +28,39 @@ const updateBlog = asyncHandler(async (req, res) => {
 });
 
 const getAllBlog = asyncHandler(async (req, res) => {
-  const allBlog = await Blog.find();
-  const blogCount = await Blog.countDocuments();
+  try {
+    const queryObj = { ...req.query };
 
-  res.status(200).json({
-    success: true,
-    blogCount,
-    allBlog,
-  });
+    const excludeFields = ['limit', 'page', 'sort', 'fields'];
+
+    excludeFields.forEach((el) => delete queryObj[el]);
+
+    let queryStr = JSON.stringify(queryObj);
+
+    queryStr = queryStr.replace(
+      /\b(gte|gt|lte|lt|eq)\b/g,
+      (match) => `$${match}`
+    );
+
+    let query = Blog.find(JSON.parse(queryStr));
+
+    const limit = req.query.limit || 4;
+
+    query = query.limit(limit);
+
+    const allBlog = await query.populate('category', 'title');
+
+    const blogCount = await Blog.countDocuments();
+
+    res.status(200).json({
+      success: true,
+      blogCount,
+      allBlog,
+    });
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
 });
 
 const getABlog = asyncHandler(async (req, res) => {
@@ -51,7 +76,8 @@ const getABlog = asyncHandler(async (req, res) => {
 
   const blog = await Blog.findById(id)
     .populate('likes', ['firstname', 'lastname', 'email'])
-    .populate('dislikes', ['firstname', 'lastname', 'email']);
+    .populate('dislikes', ['firstname', 'lastname', 'email'])
+    .populate('category', 'title');
 
   if (!blog) {
     res.status(400);
@@ -209,7 +235,7 @@ const uploadImages = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
   try {
-    const uploader = (path) => cloudinaryUploadImg(path, 'images');
+    const uploader = (path) => cloudinaryUploadImg(path, 500, 350, 'images');
     const urls = [];
     const files = req.files;
     for (const file of files) {
