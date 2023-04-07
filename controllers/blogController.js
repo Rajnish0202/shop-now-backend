@@ -115,10 +115,14 @@ const likeBlog = asyncHandler(async (req, res) => {
 
   // Find the user who liked the blog
   const loginUserId = req?.user?._id;
-  const isLiked = blog?.isLiked;
 
   // find the user if he disliked the blog
   const alreadyDisliked = blog?.dislikes?.find(
+    (userId) => userId?.toString() === loginUserId?.toString()
+  );
+
+  // find the user if he liked the blog
+  const alreadyliked = blog?.likes?.find(
     (userId) => userId?.toString() === loginUserId?.toString()
   );
 
@@ -137,7 +141,7 @@ const likeBlog = asyncHandler(async (req, res) => {
     });
   }
 
-  if (isLiked) {
+  if (alreadyliked) {
     const blog = await Blog.findByIdAndUpdate(
       blogId,
       {
@@ -180,10 +184,14 @@ const disLikeBlog = asyncHandler(async (req, res) => {
 
   // Find the user who liked the blog
   const loginUserId = req?.user?._id;
-  const isDisLiked = blog?.isDisliked;
 
   // find the user if he disliked the blog
   const alreadyLiked = blog?.likes?.find(
+    (userId) => userId?.toString() === loginUserId?.toString()
+  );
+
+  // find the user if he disliked the blog
+  const alreadyDisliked = blog?.dislikes?.find(
     (userId) => userId?.toString() === loginUserId?.toString()
   );
 
@@ -202,7 +210,7 @@ const disLikeBlog = asyncHandler(async (req, res) => {
     });
   }
 
-  if (isDisLiked) {
+  if (alreadyDisliked) {
     const blog = await Blog.findByIdAndUpdate(
       blogId,
       {
