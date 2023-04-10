@@ -817,7 +817,10 @@ const getOrderDetails = asyncHandler(async (req, res) => {
     throw new Error('User is not Authenticated. Please Logged In.');
   }
 
-  const myOrder = await Order.findById(id).populate('products.product');
+  const myOrder = await Order.findById(id)
+    .populate('products.product')
+    .populate('products.color')
+    .populate('products.size');
   res.status(200).json({
     success: true,
     myOrder,
