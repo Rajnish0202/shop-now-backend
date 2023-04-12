@@ -99,7 +99,7 @@ const getAllCategory = asyncHandler(async (req, res) => {
   });
 });
 
-//
+// Get A category
 
 const getACategory = asyncHandler(async (req, res) => {
   const { slug } = req.params;
@@ -141,6 +141,25 @@ const categoriesOfProducts = asyncHandler(async (req, res) => {
   res.status(200).json(productCategory);
 });
 
+const getQuickCategory = asyncHandler(async (req, res) => {
+  const count = await ProductCategory.countDocuments();
+
+  const random = Math.floor(Math.random() * count);
+
+  const categories = await ProductCategory.find()
+    .collation({ locale: 'en', strength: 2 })
+    .sort({ title: 1 })
+    .skip(random)
+    .limit(5)
+    .select('title');
+
+  res.status(200).json({
+    success: true,
+    count: categories.length,
+    categories,
+  });
+});
+
 module.exports = {
   createCategory,
   updateCategory,
@@ -149,4 +168,5 @@ module.exports = {
   getAllCategory,
   getACategory,
   categoriesOfProducts,
+  getQuickCategory,
 };

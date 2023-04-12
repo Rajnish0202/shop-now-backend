@@ -7,6 +7,7 @@ const {
   getACategory,
   updateCategoryImage,
   categoriesOfProducts,
+  getQuickCategory,
 } = require('../controllers/productCategoryController');
 const { isAuth, isAdmin } = require('../middlewares/authMiddleware');
 const {
@@ -17,6 +18,7 @@ const {
 const router = express.Router();
 
 router.get('/', getAllCategory);
+router.get('/quick-category', getQuickCategory);
 router.get('/product-count-category', categoriesOfProducts);
 router.get('/:slug', getACategory);
 router.post('/', isAuth, isAdmin, createCategory);
