@@ -15,6 +15,8 @@ const colorRouter = require('./routes/productColorRoute');
 const blogCategoryRouter = require('./routes/blogCategoryRoute');
 const couponRouter = require('./routes/couponRoute');
 const paymentRouter = require('./routes/paymentRoute');
+const faqRouter = require('./routes/faqRoute');
+const faqCategoryRouter = require('./routes/faqCategoryRoute');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const { notFound, errorHandler } = require('./middlewares/errorHandler');
@@ -45,6 +47,8 @@ app.use('/api/color', colorRouter);
 app.use('/api/blog-category', blogCategoryRouter);
 app.use('/api/coupon', couponRouter);
 app.use('/api/payment', paymentRouter);
+app.use('/api/faq', faqRouter);
+app.use('/api/faq-category', faqCategoryRouter);
 
 app.use(notFound);
 app.use(errorHandler);
