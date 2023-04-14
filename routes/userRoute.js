@@ -27,6 +27,7 @@ const {
   getOrderDetails,
   addWishlists,
   removeWishlists,
+  updateUserCart,
 } = require('../controllers/userController');
 const { isAuth, isAdmin } = require('../middlewares/authMiddleware');
 
@@ -48,6 +49,7 @@ router.get('/wishlist', isAuth, getWishlist);
 router.put('/add-wishlist', isAuth, addWishlists);
 router.put('/remove-wishlist', isAuth, removeWishlists);
 router.put('/cart', isAuth, userCart);
+router.put('/cart-update', isAuth, updateUserCart);
 router.put('/address', isAuth, saveAddress);
 router.get('/cart', isAuth, getUserCart);
 router.post('/cart/apply-coupon', isAuth, applyCoupon);

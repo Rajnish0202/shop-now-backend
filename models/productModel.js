@@ -67,7 +67,26 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    special: [
+      {
+        isSpecial: {
+          type: Boolean,
+          default: false,
+        },
+        offer: {
+          type: Number,
+        },
+        specialQty: {
+          type: Number,
+          default: 0,
+        },
+        specialTime: {
+          type: Date,
+        },
+      },
+    ],
   },
+
   {
     timestamps: true,
   }

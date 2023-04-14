@@ -604,6 +604,45 @@ const userCart = asyncHandler(async (req, res) => {
   }
 });
 
+const updateUserCart = asyncHandler(async (req, res) => {
+  const { productId, count } = req.body;
+  const { _id } = req.user;
+  validateMongoDbId(_id);
+  const user = await User.findById(_id);
+
+  if (!user) {
+    res.status(400);
+    throw new Error('User does not exists!');
+  }
+
+  // Check if user already have product in cart
+  let cart = await Cart.findOne({ orderby: user._id });
+
+  if (cart) {
+    // cart exists for user
+    let itemIndex = cart.products.findIndex(
+      (p) => p.product?.toString() === productId?.toString()
+    );
+
+    if (itemIndex > -1) {
+      // product exists in the cart, update the count color and size
+
+      let productItem = cart.products[itemIndex];
+
+      productItem.count = count;
+
+      cart.products[itemIndex] = productItem;
+    }
+
+    cart = await cart.save();
+
+    res.status(201).json({
+      success: true,
+      cart,
+    });
+  }
+});
+
 const getUserCart = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   validateMongoDbId(_id);
@@ -870,6 +909,7 @@ module.exports = {
   getWishlist,
   saveAddress,
   userCart,
+  updateUserCart,
   getUserCart,
   removeFromCart,
   emptyCart,
