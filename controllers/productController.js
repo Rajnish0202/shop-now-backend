@@ -20,6 +20,7 @@ const createProduct = asyncHandler(async (req, res) => {
       brand,
       type,
       sizes,
+      special,
     } = req.body;
 
     // Validation
@@ -76,6 +77,7 @@ const createProduct = asyncHandler(async (req, res) => {
       brand,
       type,
       sizes,
+      special,
     });
 
     res.status(201).json({
@@ -103,6 +105,7 @@ const updateProduct = asyncHandler(async (req, res) => {
       brand,
       type,
       sizes,
+      special,
     } = req.body;
 
     // Validation
@@ -161,6 +164,7 @@ const updateProduct = asyncHandler(async (req, res) => {
         category,
         type,
         sizes,
+        special,
       },
       {
         new: true,
@@ -538,6 +542,19 @@ const featuredProducts = asyncHandler(async (req, res) => {
   res.status(200).json(featured);
 });
 
+const specialProducts = asyncHandler(async (req, res) => {
+  const { limit } = req.query;
+  const special = await Product.find({ 'special.isSpecial': true })
+    .select('title slug brand totalRating price offer special quantity images')
+    .populate('brand', 'title')
+    .limit(limit || 4);
+
+  res.status(200).json({
+    specialCount: special.length,
+    special,
+  });
+});
+
 module.exports = {
   createProduct,
   getAllProduct,
@@ -551,4 +568,5 @@ module.exports = {
   getRelatedProduct,
   popularProducts,
   featuredProducts,
+  specialProducts,
 };

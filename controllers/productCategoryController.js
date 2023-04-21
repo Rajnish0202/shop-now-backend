@@ -54,7 +54,7 @@ const updateCategoryImage = asyncHandler(async (req, res) => {
   validateMongoDbId(id);
 
   try {
-    const uploader = (path) => cloudinaryUploadImg(path, 'image');
+    const uploader = (path) => cloudinaryUploadImg(path,300,300, 'image');
 
     const file = req.file;
     const { path } = file;
