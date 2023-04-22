@@ -550,6 +550,14 @@ const userCart = asyncHandler(async (req, res) => {
   // Check if user already have product in cart
   let cart = await Cart.findOne({ orderby: user._id });
   let getPrice = await Product.findById(productId).select('price').exec();
+  let getOffer = await Product.findById(productId)
+    .select('special.offer')
+    .exec();
+  let discountPrice = 0;
+  if (getOffer.special.offer) {
+    discountPrice =
+      getPrice.price - (getPrice.price * getOffer.special.offer) / 100;
+  }
 
   if (cart) {
     // cart exists for user
@@ -565,7 +573,9 @@ const userCart = asyncHandler(async (req, res) => {
       productItem.count = count;
       productItem.color = color;
       productItem.size = size;
-      productItem.price = getPrice.price;
+      productItem.price = getOffer.special.offer
+        ? discountPrice.toFixed(2)
+        : getPrice.price;
 
       cart.products[itemIndex] = productItem;
     } else {
@@ -575,7 +585,9 @@ const userCart = asyncHandler(async (req, res) => {
         count,
         color,
         size,
-        price: getPrice.price,
+        price: getOffer.special.offer
+          ? discountPrice.toFixed(2)
+          : getPrice.price,
       });
     }
 
@@ -590,7 +602,15 @@ const userCart = asyncHandler(async (req, res) => {
 
     let newCart = await Cart.create({
       products: [
-        { product: productId, count, color, size, price: getPrice.price },
+        {
+          product: productId,
+          count,
+          color,
+          size,
+          price: getOffer.special.offer
+            ? discountPrice.toFixed(2)
+            : getPrice.price,
+        },
       ],
       orderby: user?.id,
     });

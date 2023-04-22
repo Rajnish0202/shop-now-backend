@@ -119,7 +119,6 @@ const updateTypeImage = asyncHandler(async (req, res) => {
 // Get Product Count with Each Type
 const typesOfProducts = asyncHandler(async (req, res) => {
   const { limit } = req.query;
-  console.log(typeof +limit);
   let productType = await Type.aggregate([
     {
       $lookup: {

@@ -513,17 +513,17 @@ const uploadImages = asyncHandler(async (req, res) => {
 
 const popularProducts = asyncHandler(async (req, res) => {
   const { limit } = req.query;
-  const popular = await Product.find()
-    .sort({ sold: -1 })
+  const popular = await Product.find({ sold: { $gte: 5 } })
     .select('title brand totalRating price images sold slug')
     .populate('brand', 'title')
     .limit(limit || 4);
 
-  let totalPopular = await Product.find();
-  totalPopular = totalPopular.filter((item) => item.sold > 1);
+  let totalPopular = await Product.find({
+    sold: { $gte: 5 },
+  }).countDocuments();
 
   res.status(200).json({
-    totalPopular: totalPopular.length,
+    totalPopular,
     popularCount: popular.length,
     popular,
   });
@@ -535,11 +535,18 @@ const featuredProducts = asyncHandler(async (req, res) => {
   const { limit } = req.query;
   const featured = await Product.find()
     .sort({ createdAt: -1 })
-    .select('title brand totalRating price images sold slug createdAt')
+    .select('title brand totalRating price images sold slug createdAt special')
     .populate('brand', 'title')
     .limit(limit || 4);
 
-  res.status(200).json(featured);
+  let featuredTotal = await Product.find()
+    .sort({ createdAt: -1 })
+    .countDocuments();
+
+  res.status(200).json({
+    featuredTotal,
+    featured,
+  });
 });
 
 const specialProducts = asyncHandler(async (req, res) => {
