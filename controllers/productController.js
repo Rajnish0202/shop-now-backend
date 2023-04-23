@@ -556,8 +556,12 @@ const specialProducts = asyncHandler(async (req, res) => {
     .populate('brand', 'title')
     .limit(limit || 4);
 
+  const specialCount = await Product.find({
+    'special.isSpecial': true,
+  }).countDocuments();
+
   res.status(200).json({
-    specialCount: special.length,
+    specialCount,
     special,
   });
 });

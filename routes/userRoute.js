@@ -37,8 +37,8 @@ router.post('/register', createUser);
 router.post('/login', loginUser);
 router.get('/all-users', getAllUser);
 // router.get('/refresh', handleRefreshToken);
-router.get('/logout', logoutUser);
 router.post('/forgot-password', forgotPassword);
+router.get('/logout', logoutUser);
 router.put('/reset-password/:resetToken', resetPassword);
 
 router.put('/empty-cart', isAuth, removeFromCart);
