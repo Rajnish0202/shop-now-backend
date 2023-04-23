@@ -29,7 +29,7 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'https://shopnow-app.vercel.app'],
     credentials: true,
   })
 );
