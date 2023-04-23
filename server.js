@@ -50,6 +50,10 @@ app.use('/api/payment', paymentRouter);
 app.use('/api/faq', faqRouter);
 app.use('/api/faq-category', faqCategoryRouter);
 
+app.get('/', (req, res) => {
+  res.send('Home Page');
+});
+
 app.use(notFound);
 app.use(errorHandler);
 

@@ -57,8 +57,8 @@ const createUser = asyncHandler(async (req, res) => {
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 3),
-    // secure: true,
-    // sameSite: 'none',
+    secure: true,
+    sameSite: 'none',
   });
 
   if (user) {
@@ -99,8 +99,8 @@ const loginUser = asyncHandler(async (req, res) => {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 3),
-      // secure: true,
-      // sameSite: 'none',
+      secure: true,
+      sameSite: 'none',
     });
     res.json({
       success: true,
