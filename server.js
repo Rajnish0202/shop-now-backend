@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const authRouter = require('./routes/userRoute');
 const productRouter = require('./routes/productRoute');
+const ordersRouter = require('./routes/ordersRoute');
 const blogRouter = require('./routes/blogRoute');
 const productCategoryRouter = require('./routes/productCategoryRoute');
 const productTypeRouter = require('./routes/productTypeRoute');
@@ -49,6 +50,7 @@ app.use('/api/coupon', couponRouter);
 app.use('/api/payment', paymentRouter);
 app.use('/api/faq', faqRouter);
 app.use('/api/faq-category', faqCategoryRouter);
+app.use('/api/orders', ordersRouter);
 
 app.get('/', (req, res) => {
   res.send('Home Page');
