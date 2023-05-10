@@ -5,7 +5,7 @@ const productSizeSchema = new mongoose.Schema(
   {
     title: {
       type: String,
-      enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+      uppercase: true,
     },
   },
   {
