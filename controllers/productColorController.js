@@ -73,7 +73,7 @@ const deleteColor = asyncHandler(async (req, res) => {
 const getAllColor = asyncHandler(async (req, res) => {
   const colors = await Color.find()
     .collation({ locale: 'en', strength: 2 })
-    .sort({ title: 1 });
+    .sort({ createdAt: -1 });
 
   res.status(200).json({
     success: true,
