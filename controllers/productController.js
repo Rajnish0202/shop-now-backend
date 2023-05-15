@@ -3,7 +3,10 @@ const Product = require('../models/productModel');
 const validateMongoDbId = require('../utils/validateMongodbId');
 const slugify = require('slugify');
 const User = require('../models/userModel');
-const cloudinaryUploadImg = require('../utils/cloudinary');
+const {
+  cloudinaryUploadImg,
+  cloudinaryDeleteImg,
+} = require('../utils/cloudinary');
 const fs = require('fs');
 
 // Create Product
@@ -185,6 +188,15 @@ const updateProduct = asyncHandler(async (req, res) => {
 const deleteProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
+
+  let product = await Product.findById(id);
+
+  // Deleting Images From Cloudinary
+
+  for (let i = 0; i < product.images.length; i++) {
+    cloudinaryDeleteImg(product, i);
+  }
+
   await Product.findByIdAndDelete(id);
 
   res.status(200).json({
@@ -484,8 +496,15 @@ const rating = asyncHandler(async (req, res) => {
 const uploadImages = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
+
+  let product = await Product.findById(id);
+  if (!product) {
+    res.status(404);
+    throw new Error('Product Not Found!');
+  }
+
   try {
-    const uploader = (path) => cloudinaryUploadImg(path, 300, 300, 'images');
+    const uploader = (path) => cloudinaryUploadImg(path, 300, 400, 'images');
     const urls = [];
     const files = req.files;
     for (const file of files) {
@@ -494,7 +513,15 @@ const uploadImages = asyncHandler(async (req, res) => {
       urls.push(newPath);
       fs.unlinkSync(path);
     }
-    const findProduct = await Product.findByIdAndUpdate(
+
+    // Deleting Images From Cloudinary
+    if (req.files !== undefined) {
+      for (let i = 0; i < product.images.length; i++) {
+        cloudinaryDeleteImg(product, i);
+      }
+    }
+
+    product = await Product.findByIdAndUpdate(
       id,
       {
         images: urls.map((file) => {
@@ -503,7 +530,7 @@ const uploadImages = asyncHandler(async (req, res) => {
       },
       { new: true }
     );
-    res.status(200).json(findProduct);
+    res.status(200).json(product);
   } catch (error) {
     throw new Error(error);
   }

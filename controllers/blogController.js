@@ -1,7 +1,10 @@
 const Blog = require('../models/blogModel');
 const asyncHandler = require('express-async-handler');
 const validateMongoDbId = require('../utils/validateMongodbId');
-const cloudinaryUploadImg = require('../utils/cloudinary');
+const {
+  cloudinaryUploadImg,
+  cloudinaryDeleteImg,
+} = require('../utils/cloudinary');
 const fs = require('fs');
 
 const createBlog = asyncHandler(async (req, res) => {
@@ -242,8 +245,15 @@ const disLikeBlog = asyncHandler(async (req, res) => {
 const uploadImages = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
+
+  let blog = await Blog.findById(id);
+  if (!blog) {
+    res.status(404);
+    throw new Error('Blog Not Found!');
+  }
+
   try {
-    const uploader = (path) => cloudinaryUploadImg(path, 500, 350, 'images');
+    const uploader = (path) => cloudinaryUploadImg(path, 500, 500, 'images');
     const urls = [];
     const files = req.files;
     for (const file of files) {
@@ -252,7 +262,15 @@ const uploadImages = asyncHandler(async (req, res) => {
       urls.push(newPath);
       fs.unlinkSync(path);
     }
-    const findBlog = await Blog.findByIdAndUpdate(
+
+    // Deleting Images From Cloudinary
+    if (req.files !== undefined) {
+      for (let i = 0; i < blog.images.length; i++) {
+        cloudinaryDeleteImg(blog, i);
+      }
+    }
+
+    blog = await Blog.findByIdAndUpdate(
       id,
       {
         images: urls.map((file) => {
@@ -261,7 +279,7 @@ const uploadImages = asyncHandler(async (req, res) => {
       },
       { new: true }
     );
-    res.status(200).json(findBlog);
+    res.status(200).json(blog);
   } catch (error) {
     throw new Error(error);
   }

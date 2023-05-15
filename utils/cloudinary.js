@@ -32,4 +32,10 @@ const cloudinaryUploadImg = async (
   });
 };
 
-module.exports = cloudinaryUploadImg;
+const cloudinaryDeleteImg = async (deleteObj, i) => {
+  await cloudinary.uploader.destroy(deleteObj.images[i].public_id, {
+    folder: 'Shop-now',
+  });
+};
+
+module.exports = { cloudinaryUploadImg, cloudinaryDeleteImg };
