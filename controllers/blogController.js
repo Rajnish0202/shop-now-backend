@@ -96,6 +96,15 @@ const getABlog = asyncHandler(async (req, res) => {
 const deleteBlog = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
+
+  let blog = await Blog.findById(id);
+
+  // Deleting Images From Cloudinary
+
+  for (let i = 0; i < blog.images.length; i++) {
+    cloudinaryDeleteImg(blog, i);
+  }
+
   await Blog.findByIdAndDelete(id);
 
   res.status(200).json({
