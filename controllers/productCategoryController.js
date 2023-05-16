@@ -2,7 +2,10 @@ const asyncHandler = require('express-async-handler');
 const ProductCategory = require('../models/productCategoryModel');
 const validateMongoDbId = require('../utils/validateMongodbId');
 const slugify = require('slugify');
-const cloudinaryUploadImg = require('../utils/cloudinary');
+const {
+  cloudinaryUploadImg,
+  cloudinaryDeleteSingleImg,
+} = require('../utils/cloudinary');
 const fs = require('fs');
 
 const createCategory = asyncHandler(async (req, res) => {
@@ -53,24 +56,34 @@ const updateCategoryImage = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
 
+  let category = await ProductCategory.findById(id);
+  if (!category) {
+    res.status(404);
+    throw new Error('Category Not Found!');
+  }
+
   try {
-    const uploader = (path) => cloudinaryUploadImg(path,300,300, 'image');
+    const uploader = (path) => cloudinaryUploadImg(path, 300, 300, 'image');
 
     const file = req.file;
     const { path } = file;
 
     const newPath = await uploader(path);
-
     fs.unlinkSync(path);
 
-    const findCategory = await ProductCategory.findByIdAndUpdate(
+    // Deleting Image From Cloudinary
+    if (category?.image?.public_id) {
+      cloudinaryDeleteSingleImg(category);
+    }
+
+    category = await ProductCategory.findByIdAndUpdate(
       id,
       {
         image: newPath,
       },
       { new: true }
     );
-    res.status(200).json(findCategory);
+    res.status(200).json(category);
   } catch (error) {
     throw new Error(error);
   }
@@ -79,6 +92,15 @@ const updateCategoryImage = asyncHandler(async (req, res) => {
 const deleteCategory = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
+
+  let category = await ProductCategory.findById(id);
+  if (!category) {
+    res.status(404);
+    throw new Error('Category Not Found!');
+  }
+
+  cloudinaryDeleteSingleImg(category);
+
   await ProductCategory.findByIdAndDelete(id);
 
   res.status(200).json({
@@ -90,7 +112,7 @@ const deleteCategory = asyncHandler(async (req, res) => {
 const getAllCategory = asyncHandler(async (req, res) => {
   const categories = await ProductCategory.find()
     .collation({ locale: 'en', strength: 2 })
-    .sort({ title: 1 });
+    .sort({ createdAt: -1 });
 
   res.status(200).json({
     success: true,

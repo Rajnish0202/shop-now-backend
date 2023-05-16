@@ -2,7 +2,10 @@ const asyncHandler = require('express-async-handler');
 const validateMongoDbId = require('../utils/validateMongodbId');
 const slugify = require('slugify');
 const Type = require('../models/productType');
-const cloudinaryUploadImg = require('../utils/cloudinary');
+const {
+  cloudinaryUploadImg,
+  cloudinaryDeleteSingleImg,
+} = require('../utils/cloudinary');
 const fs = require('fs');
 
 const createType = asyncHandler(async (req, res) => {
@@ -52,6 +55,15 @@ const updateType = asyncHandler(async (req, res) => {
 const deleteType = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
+
+  let type = await Type.findById(id);
+  if (!type) {
+    res.status(404);
+    throw new Error('Type Not Found!');
+  }
+
+  cloudinaryDeleteSingleImg(type);
+
   await Type.findByIdAndDelete(id);
 
   res.status(200).json({
@@ -61,7 +73,7 @@ const deleteType = asyncHandler(async (req, res) => {
 });
 
 const getAllType = asyncHandler(async (req, res) => {
-  const types = await Type.find();
+  const types = await Type.find().sort({ createdAt: -1 });
 
   res.status(200).json({
     success: true,
@@ -93,6 +105,12 @@ const updateTypeImage = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
 
+  let type = await Type.findById(id);
+  if (!type) {
+    res.status(404);
+    throw new Error('Type Not Found!');
+  }
+
   try {
     const uploader = (path) => cloudinaryUploadImg(path, 480, 805, 'image');
 
@@ -100,17 +118,21 @@ const updateTypeImage = asyncHandler(async (req, res) => {
     const { path } = file;
 
     const newPath = await uploader(path);
-
     fs.unlinkSync(path);
 
-    const findType = await Type.findByIdAndUpdate(
+    // Deleting Image From Cloudinary
+    if (type?.image?.public_id) {
+      cloudinaryDeleteSingleImg(type);
+    }
+
+    type = await Type.findByIdAndUpdate(
       id,
       {
         image: newPath,
       },
       { new: true }
     );
-    res.status(200).json(findType);
+    res.status(200).json(type);
   } catch (error) {
     throw new Error(error);
   }

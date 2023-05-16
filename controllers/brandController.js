@@ -2,7 +2,10 @@ const asyncHandler = require('express-async-handler');
 const Brand = require('../models/brandModel');
 const validateMongoDbId = require('../utils/validateMongodbId');
 const fs = require('fs');
-const cloudinaryUploadImg = require('../utils/cloudinary');
+const {
+  cloudinaryUploadImg,
+  cloudinaryDeleteSingleLogo,
+} = require('../utils/cloudinary');
 
 const createBrand = asyncHandler(async (req, res) => {
   const brand = await Brand.create(req.body);
@@ -29,6 +32,10 @@ const updateBrand = asyncHandler(async (req, res) => {
 const deleteBrand = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
+  let brand = await Brand.findById(id);
+
+  cloudinaryDeleteSingleLogo(brand);
+
   await Brand.findByIdAndDelete(id);
 
   res.status(200).json({
@@ -40,7 +47,7 @@ const deleteBrand = asyncHandler(async (req, res) => {
 const getAllBrand = asyncHandler(async (req, res) => {
   const brands = await Brand.find()
     .collation({ locale: 'en', strength: 2 })
-    .sort({ title: 1 });
+    .sort({ createdAt: -1 });
 
   const counts = brands.length;
 
@@ -65,6 +72,13 @@ const getABrand = asyncHandler(async (req, res) => {
 const uploadBrandImage = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
+
+  let brand = await Brand.findById(id);
+  if (!brand) {
+    res.status(404);
+    throw new Error('Brand Not Found!');
+  }
+
   try {
     const uploader = (path) => cloudinaryUploadImg(path, 150, 150, 'image');
 
@@ -72,17 +86,22 @@ const uploadBrandImage = asyncHandler(async (req, res) => {
     const { path } = file;
 
     const newPath = await uploader(path);
-
     fs.unlinkSync(path);
 
-    const findBrand = await Brand.findByIdAndUpdate(
+    // Deleting Image From Cloudinary
+    if (brand?.logo?.public_id) {
+      cloudinaryDeleteSingleLogo(brand);
+    }
+
+    brand = await Brand.findByIdAndUpdate(
       id,
       {
         logo: newPath,
       },
       { new: true }
     );
-    res.status(200).json(findBrand);
+
+    res.status(200).json(brand);
   } catch (error) {
     throw new Error(error);
   }

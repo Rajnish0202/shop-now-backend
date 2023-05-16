@@ -51,7 +51,7 @@ const deleteBlogCategory = asyncHandler(async (req, res) => {
 });
 
 const getAllBlogCategory = asyncHandler(async (req, res) => {
-  const categories = await BlogCategory.find();
+  const categories = await BlogCategory.find().sort({ createdAt: -1 });
 
   res.status(200).json({
     success: true,

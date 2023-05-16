@@ -33,9 +33,26 @@ const cloudinaryUploadImg = async (
 };
 
 const cloudinaryDeleteImg = async (deleteObj, i) => {
-  await cloudinary.uploader.destroy(deleteObj.images[i].public_id, {
+  await cloudinary.uploader.destroy(deleteObj?.images[i]?.public_id, {
     folder: 'Shop-now',
   });
 };
 
-module.exports = { cloudinaryUploadImg, cloudinaryDeleteImg };
+const cloudinaryDeleteSingleLogo = async (deleteObj) => {
+  await cloudinary.uploader.destroy(deleteObj?.logo?.public_id, {
+    folder: 'Shop-now',
+  });
+};
+
+const cloudinaryDeleteSingleImg = async (deleteObj) => {
+  await cloudinary.uploader.destroy(deleteObj?.image?.public_id, {
+    folder: 'Shop-now',
+  });
+};
+
+module.exports = {
+  cloudinaryUploadImg,
+  cloudinaryDeleteImg,
+  cloudinaryDeleteSingleImg,
+  cloudinaryDeleteSingleLogo,
+};

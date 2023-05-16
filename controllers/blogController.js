@@ -51,7 +51,9 @@ const getAllBlog = asyncHandler(async (req, res) => {
 
     query = query.limit(limit);
 
-    const allBlog = await query.populate('category', 'title');
+    const allBlog = await query
+      .populate('category', 'title')
+      .sort({ createdAt: -1 });
 
     const blogCount = await Blog.countDocuments();
 

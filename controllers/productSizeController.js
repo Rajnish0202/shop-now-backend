@@ -60,7 +60,7 @@ const deleteSize = asyncHandler(async (req, res) => {
 const getAllSize = asyncHandler(async (req, res) => {
   const sizes = await Size.find()
     .collation({ locale: 'en', strength: 3 })
-    .sort({ title: 1 });
+    .sort({ createdAt: -1 });
 
   res.status(200).json({
     success: true,
