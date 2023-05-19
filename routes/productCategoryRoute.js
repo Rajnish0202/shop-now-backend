@@ -20,7 +20,7 @@ const router = express.Router();
 router.get('/', getAllCategory);
 router.get('/quick-category', getQuickCategory);
 router.get('/product-count-category', categoriesOfProducts);
-router.get('/:slug', getACategory);
+router.get('/:id', getACategory);
 router.post('/', isAuth, isAdmin, createCategory);
 router.put('/:id', isAuth, isAdmin, updateCategory);
 router.put(

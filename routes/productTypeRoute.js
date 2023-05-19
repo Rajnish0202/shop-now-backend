@@ -19,7 +19,7 @@ const router = express.Router();
 
 router.get('/', getAllType);
 router.get('/type', typesOfProducts);
-router.get('/:slug', getAType);
+router.get('/:id', getAType);
 router.post('/', isAuth, isAdmin, createType);
 router.put('/:id', isAuth, isAdmin, updateType);
 router.delete('/:id', isAuth, isAdmin, deleteType);

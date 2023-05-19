@@ -85,8 +85,8 @@ const getAllType = asyncHandler(async (req, res) => {
 // A single Type
 
 const getAType = asyncHandler(async (req, res) => {
-  const { slug } = req.params;
-  const type = await Type.findOne({ slug });
+  const { id } = req.params;
+  const type = await Type.findById(id);
 
   if (!type) {
     res.status(404);

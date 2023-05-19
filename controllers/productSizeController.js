@@ -73,7 +73,7 @@ const getAllSize = asyncHandler(async (req, res) => {
 
 const getASize = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const size = await Size.findOne({ id });
+  const size = await Size.findById(id);
 
   if (!size) {
     res.status(404);

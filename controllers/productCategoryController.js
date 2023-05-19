@@ -124,8 +124,8 @@ const getAllCategory = asyncHandler(async (req, res) => {
 // Get A category
 
 const getACategory = asyncHandler(async (req, res) => {
-  const { slug } = req.params;
-  const category = await ProductCategory.findOne({ slug });
+  const { id } = req.params;
+  const category = await ProductCategory.findById(id);
 
   if (!category) {
     res.status(404);
