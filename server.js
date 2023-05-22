@@ -52,6 +52,8 @@ app.use('/api/faq', faqRouter);
 app.use('/api/faq-category', faqCategoryRouter);
 app.use('/api/orders', ordersRouter);
 
+app.use(express.static(`${__dirname}/public`));
+
 app.get('/', (req, res) => {
   res.send('Home Page');
 });
