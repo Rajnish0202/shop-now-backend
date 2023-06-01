@@ -888,30 +888,6 @@ const getOrderDetails = asyncHandler(async (req, res) => {
   });
 });
 
-const updateOrderStatus = asyncHandler(async (req, res) => {
-  const { status } = req.body;
-  const { id } = req.params;
-  validateMongoDbId(id);
-
-  const updateOrderStatus = await Order.findByIdAndUpdate(
-    id,
-    {
-      orderStatus: status,
-      paymentIntent: {
-        paid: status === 'Delivered' ? 'Paid' : 'Not Paid',
-      },
-    },
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
-  res.status(200).json({
-    success: true,
-    updateOrderStatus,
-  });
-});
-
 module.exports = {
   createUser,
   loginUser,
@@ -939,6 +915,6 @@ module.exports = {
   createOrder,
   getOrders,
   getOrderDetails,
-  updateOrderStatus,
+
   loadUser,
 };

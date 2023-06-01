@@ -21,7 +21,6 @@ const {
   applyCoupon,
   createOrder,
   getOrders,
-  updateOrderStatus,
   loadUser,
   emptyCart,
   getOrderDetails,
@@ -63,6 +62,5 @@ router.delete('/:id', isAuth, isAdmin, deleteUser);
 
 router.put('/block-user/:id', isAuth, isAdmin, blockUser);
 router.put('/unblock-user/:id', isAuth, isAdmin, unblockUser);
-router.put('/update-order/:id', isAuth, isAdmin, updateOrderStatus);
 
 module.exports = router;

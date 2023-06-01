@@ -35,8 +35,6 @@ app.use(
   })
 );
 
-app.use(express.static(`${__dirname}/public`));
-
 // Router Middleware
 
 app.use('/api/user', authRouter);
