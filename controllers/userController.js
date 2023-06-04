@@ -3,7 +3,7 @@ const User = require('../models/userModel');
 const { generateToken } = require('../utils/jwtToken');
 const validateMongoDbId = require('../utils/validateMongodbId');
 const { generateRefreshToken } = require('../utils/refreshToken');
-const jwt = require('jsonwebtoken');
+// const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
 const Product = require('../models/productModel');
@@ -795,7 +795,7 @@ const createOrder = asyncHandler(async (req, res) => {
     paymentIntent = {
       paymentId: uniqid('COD-'),
       method,
-      amount: finalAmount?.toFixed(2),
+      amount: +finalAmount?.toFixed(2),
       taxPrice,
       shippingPrice,
       status: 'Cash on Delivery',
@@ -809,7 +809,7 @@ const createOrder = asyncHandler(async (req, res) => {
     paymentIntent = {
       paymentId: paymentInfo.id,
       method,
-      amount: finalAmount?.toFixed(2),
+      amount: +finalAmount?.toFixed(2),
       taxPrice,
       shippingPrice,
       status: paymentInfo.status,
@@ -888,6 +888,30 @@ const getOrderDetails = asyncHandler(async (req, res) => {
   });
 });
 
+const updateUserRole = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const { role } = req.body;
+  validateMongoDbId(id);
+
+  try {
+    await User.findByIdAndUpdate(
+      id,
+      { role: role },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+    res.status(200).json({
+      success: true,
+      message: 'User Role Changed.',
+    });
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+
 module.exports = {
   createUser,
   loginUser,
@@ -915,6 +939,6 @@ module.exports = {
   createOrder,
   getOrders,
   getOrderDetails,
-
+  updateUserRole,
   loadUser,
 };

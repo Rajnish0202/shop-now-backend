@@ -27,6 +27,7 @@ const {
   addWishlists,
   removeWishlists,
   updateUserCart,
+  updateUserRole,
 } = require('../controllers/userController');
 const { isAuth, isAdmin } = require('../middlewares/authMiddleware');
 
@@ -62,5 +63,6 @@ router.delete('/:id', isAuth, isAdmin, deleteUser);
 
 router.put('/block-user/:id', isAuth, isAdmin, blockUser);
 router.put('/unblock-user/:id', isAuth, isAdmin, unblockUser);
+router.put('/update-role-user/:id', isAuth, isAdmin, updateUserRole);
 
 module.exports = router;
